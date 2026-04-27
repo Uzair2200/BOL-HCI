@@ -8,10 +8,11 @@ import { PromptCard } from "../components/PromptCard";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { RewardCard } from "../components/RewardCard";
 import { useState } from "react";
+import { useMic } from "../context/MicContext";
 
 export default function Walk() {
   const [currentScene, setCurrentScene] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [hasResponded, setHasResponded] = useState(false);
   const [showReward, setShowReward] = useState(false);
 
@@ -41,18 +42,17 @@ export default function Walk() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
+    } else {
+      setIsRecording(false);
+      setHasResponded(true);
       setTimeout(() => {
-        setIsRecording(false);
-        setHasResponded(true);
-        setTimeout(() => {
-          if (currentScene < scenarios.length - 1) {
-            setCurrentScene(currentScene + 1);
-            setHasResponded(false);
-          } else {
-            setShowReward(true);
-          }
-        }, 2500);
-      }, 3000);
+        if (currentScene < scenarios.length - 1) {
+          setCurrentScene(currentScene + 1);
+          setHasResponded(false);
+        } else {
+          setShowReward(true);
+        }
+      }, 2500);
     }
   };
 
@@ -193,8 +193,7 @@ export default function Walk() {
           </motion.div>
         )}
 
-        <div className="flex justify-center">
-          <div className="text-center">
+        <div className="mx-auto w-fit text-center">
             <MicButton
               isRecording={isRecording}
               onToggle={handleMicToggle}
@@ -204,7 +203,6 @@ export default function Walk() {
             <p className="text-sm text-muted-foreground mt-3">
               {isRecording ? "Responding..." : "Tap to respond"}
             </p>
-          </div>
         </div>
       </div>
 

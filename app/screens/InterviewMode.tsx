@@ -6,10 +6,11 @@ import { BottomNav } from "../components/BottomNav";
 import { PetDisplay } from "../components/PetDisplay";
 import { MicButton } from "../components/MicButton";
 import { FeedbackCard } from "../components/FeedbackCard";
+import { useMic } from "../context/MicContext";
 
 export default function InterviewMode() {
   const [currentQ, setCurrentQ] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [hasAnswered, setHasAnswered] = useState(false);
   const [score, setScore] = useState(0);
 
@@ -23,18 +24,17 @@ export default function InterviewMode() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
+    } else {
+      setIsRecording(false);
+      setHasAnswered(true);
+      const points = Math.floor(Math.random() * 20) + 70;
+      setScore(score + points);
       setTimeout(() => {
-        setIsRecording(false);
-        setHasAnswered(true);
-        const points = Math.floor(Math.random() * 20) + 70;
-        setScore(score + points);
-        setTimeout(() => {
-          if (currentQ < questions.length - 1) {
-            setCurrentQ(currentQ + 1);
-            setHasAnswered(false);
-          }
-        }, 3000);
-      }, 5000);
+        if (currentQ < questions.length - 1) {
+          setCurrentQ(currentQ + 1);
+          setHasAnswered(false);
+        }
+      }, 3000);
     }
   };
 

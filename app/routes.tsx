@@ -24,102 +24,128 @@ import ListenLearn from "./screens/ListenLearn";
 import Profile from "./screens/Profile";
 import Rankings from "./screens/Rankings";
 import AddFriends from "./screens/AddFriends";
+import { withScreenLoading } from "./components/withScreenLoading";
+
+const WelcomeScreen = withScreenLoading(Welcome, "auth");
+const LoginScreen = withScreenLoading(Login, "auth");
+const SignupScreen = withScreenLoading(Signup, "auth");
+const DiagnosticScreen = withScreenLoading(Diagnostic, "auth");
+const HomeScreen = withScreenLoading(Home, "home");
+const MorningGreetingScreen = withScreenLoading(MorningGreeting, "activity");
+const BrushScreen = withScreenLoading(Brush, "activity");
+const FeedScreen = withScreenLoading(Feed, "activity");
+const BathScreen = withScreenLoading(Bath, "activity");
+const SleepScreen = withScreenLoading(Sleep, "activity");
+const PlayScreen = withScreenLoading(Play, "activity");
+const WalkScreen = withScreenLoading(Walk, "activity");
+const VetVisitScreen = withScreenLoading(VetVisit, "activity");
+const TricksScreen = withScreenLoading(Tricks, "activity");
+const StoryTimeScreen = withScreenLoading(StoryTime, "activity");
+const PetDiaryScreen = withScreenLoading(PetDiary, "activity");
+const PetGardenScreen = withScreenLoading(PetGarden, "activity");
+const PetDoctorScreen = withScreenLoading(PetDoctor, "activity");
+const InterviewModeScreen = withScreenLoading(InterviewMode, "activity");
+const ChallengeModeScreen = withScreenLoading(ChallengeMode, "activity");
+const ListenLearnScreen = withScreenLoading(ListenLearn, "activity");
+const ProfileScreen = withScreenLoading(Profile, "profile");
+const RankingsScreen = withScreenLoading(Rankings, "ranking");
+const AddFriendsScreen = withScreenLoading(AddFriends, "ranking");
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component: Welcome,
+    Component: WelcomeScreen,
   },
   {
     path: "/login",
-    Component: Login,
+    Component: LoginScreen,
   },
   {
     path: "/signup",
-    Component: Signup,
+    Component: SignupScreen,
   },
   {
     path: "/diagnostic",
-    Component: Diagnostic,
+    Component: DiagnosticScreen,
   },
   {
     path: "/home",
-    Component: Home,
+    Component: HomeScreen,
   },
   {
     path: "/morning-greeting",
-    Component: MorningGreeting,
+    Component: MorningGreetingScreen,
   },
   {
     path: "/brush",
-    Component: Brush,
+    Component: BrushScreen,
   },
   {
     path: "/feed",
-    Component: Feed,
+    Component: FeedScreen,
   },
   {
     path: "/bath",
-    Component: Bath,
+    Component: BathScreen,
   },
   {
     path: "/sleep",
-    Component: Sleep,
+    Component: SleepScreen,
   },
   {
     path: "/play",
-    Component: Play,
+    Component: PlayScreen,
   },
   {
     path: "/walk",
-    Component: Walk,
+    Component: WalkScreen,
   },
   {
     path: "/vet",
-    Component: VetVisit,
+    Component: VetVisitScreen,
   },
   {
     path: "/tricks",
-    Component: Tricks,
+    Component: TricksScreen,
   },
   {
     path: "/story",
-    Component: StoryTime,
+    Component: StoryTimeScreen,
   },
   {
     path: "/diary",
-    Component: PetDiary,
+    Component: PetDiaryScreen,
   },
   {
     path: "/garden",
-    Component: PetGarden,
+    Component: PetGardenScreen,
   },
   {
     path: "/doctor",
-    Component: PetDoctor,
+    Component: PetDoctorScreen,
   },
   {
     path: "/interview",
-    Component: InterviewMode,
+    Component: InterviewModeScreen,
   },
   {
     path: "/challenge",
-    Component: ChallengeMode,
+    Component: ChallengeModeScreen,
   },
   {
     path: "/listen",
-    Component: ListenLearn,
+    Component: ListenLearnScreen,
   },
   {
     path: "/profile",
-    Component: Profile,
+    Component: ProfileScreen,
   },
   {
     path: "/rankings",
-    Component: Rankings,
+    Component: RankingsScreen,
   },
   {
     path: "/rankings/add-friends",
-    Component: AddFriends,
+    Component: AddFriendsScreen,
   },
 ]);

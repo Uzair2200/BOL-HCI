@@ -1,4 +1,4 @@
-import { HomeIcon, UserIcon, TrophyIcon, BookOpenIcon } from "./AppIcons";
+import { HomeIcon, UserIcon, UsersIcon, BookOpenIcon } from "./AppIcons";
 import { useNavigate, useLocation } from "react-router";
 
 export function BottomNav() {
@@ -8,7 +8,7 @@ export function BottomNav() {
   const navItems = [
     { icon: HomeIcon, label: "Home", path: "/home" },
     { icon: BookOpenIcon, label: "Learn", path: "/story" },
-    { icon: TrophyIcon, label: "Rankings", path: "/rankings" },
+    { icon: UsersIcon, label: "Friends", path: "/rankings" },
     { icon: UserIcon, label: "Profile", path: "/profile" },
   ];
 
@@ -17,7 +17,10 @@ export function BottomNav() {
       <div className="flex items-center justify-around max-w-lg mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive =
+            item.path === "/rankings"
+              ? location.pathname.startsWith("/rankings")
+              : location.pathname === item.path;
           
           return (
             <button

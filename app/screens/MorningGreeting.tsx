@@ -3,13 +3,14 @@ import { TopBar } from "../components/TopBar";
 import { BottomNav } from "../components/BottomNav";
 import { PetDisplay } from "../components/PetDisplay";
 import { MicButton } from "../components/MicButton";
+import { useMic } from "../context/MicContext";
 import { PromptCard } from "../components/PromptCard";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { RewardCard } from "../components/RewardCard";
 import { motion } from "motion/react";
 
 export default function MorningGreeting() {
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [hasSpoken, setHasSpoken] = useState(false);
   const [showReward, setShowReward] = useState(false);
 
@@ -18,17 +19,12 @@ export default function MorningGreeting() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
-      // Simulate recording
-      setTimeout(() => {
-        setIsRecording(false);
-        setHasSpoken(true);
-        // Show reward after feedback
-        setTimeout(() => {
-          setShowReward(true);
-        }, 2000);
-      }, 3000);
     } else {
       setIsRecording(false);
+      setHasSpoken(true);
+      setTimeout(() => {
+        setShowReward(true);
+      }, 2000);
     }
   };
 

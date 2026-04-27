@@ -7,10 +7,11 @@ import { PetDisplay } from "../components/PetDisplay";
 import { MicButton } from "../components/MicButton";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { RewardCard } from "../components/RewardCard";
+import { useMic } from "../context/MicContext";
 
 export default function PetDoctor() {
   const [currentMistake, setCurrentMistake] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [hasFixed, setHasFixed] = useState(false);
   const [showReward, setShowReward] = useState(false);
 
@@ -41,17 +42,16 @@ export default function PetDoctor() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
+    } else {
+      setIsRecording(false);
+      setHasFixed(true);
       setTimeout(() => {
-        setIsRecording(false);
-        setHasFixed(true);
-        setTimeout(() => {
-          if (currentMistake < mistakes.length - 1) {
-            setCurrentMistake(currentMistake + 1);
-            setHasFixed(false);
-          } else {
-            setShowReward(true);
-          }
-        }, 2500);
+        if (currentMistake < mistakes.length - 1) {
+          setCurrentMistake(currentMistake + 1);
+          setHasFixed(false);
+        } else {
+          setShowReward(true);
+        }
       }, 2500);
     }
   };

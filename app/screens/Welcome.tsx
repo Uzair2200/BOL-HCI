@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router";
+import { AuthAppPreview } from "../components/AuthAppPreview";
 
 export default function Welcome() {
   const navigate = useNavigate();
@@ -15,9 +16,13 @@ export default function Welcome() {
         <h1 className="text-[44px] font-bold text-[#2F2750] leading-none">Project Bol</h1>
         <p className="mt-3 text-[18px] text-[#8A8898]">Speak. Learn. Grow.</p>
 
+        <div className="mt-7 text-left">
+          <AuthAppPreview />
+        </div>
+
         <button
           onClick={() => navigate("/signup")}
-          className="mt-10 w-full rounded-full bg-[#5B50D6] py-4 text-[18px] font-semibold text-white hover:bg-[#4F46C9] transition-colors"
+          className="mt-7 w-full rounded-full bg-[#5B50D6] py-4 text-[18px] font-semibold text-white hover:bg-[#4F46C9] transition-colors"
         >
           Get started
         </button>

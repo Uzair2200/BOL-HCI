@@ -3,13 +3,14 @@ import { TopBar } from "../components/TopBar";
 import { BottomNav } from "../components/BottomNav";
 import { PetDisplay } from "../components/PetDisplay";
 import { MicButton } from "../components/MicButton";
+import { useMic } from "../context/MicContext";
 import { PromptCard } from "../components/PromptCard";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { RewardCard } from "../components/RewardCard";
 import { motion } from "motion/react";
 
 export default function Brush() {
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [hasAnswered, setHasAnswered] = useState(false);
   const [showReward, setShowReward] = useState(false);
 
@@ -19,11 +20,10 @@ export default function Brush() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
-      setTimeout(() => {
-        setIsRecording(false);
-        setHasAnswered(true);
-        setTimeout(() => setShowReward(true), 2000);
-      }, 2500);
+    } else {
+      setIsRecording(false);
+      setHasAnswered(true);
+      setTimeout(() => setShowReward(true), 2000);
     }
   };
 

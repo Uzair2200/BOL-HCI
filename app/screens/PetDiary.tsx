@@ -5,19 +5,19 @@ import { BottomNav } from "../components/BottomNav";
 import { PetDisplay } from "../components/PetDisplay";
 import { MicButton } from "../components/MicButton";
 import { useState } from "react";
+import { useMic } from "../context/MicContext";
 
 export default function PetDiary() {
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [transcript, setTranscript] = useState("");
   const [hasSaved, setHasSaved] = useState(false);
 
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
-      setTimeout(() => {
-        setIsRecording(false);
-        setTranscript("Today was amazing! I practiced English with Dino and we learned about animals. My favorite part was playing word games. I feel more confident speaking now.");
-      }, 4000);
+    } else {
+      setIsRecording(false);
+      setTranscript("Today was amazing! I practiced English with Dino and we learned about animals. My favorite part was playing word games. I feel more confident speaking now.");
     }
   };
 
@@ -112,8 +112,7 @@ export default function PetDiary() {
               </motion.div>
             )}
 
-            <div className="flex justify-center">
-              <div className="text-center">
+            <div className="mx-auto w-fit text-center">
                 <MicButton
                   isRecording={isRecording}
                   onToggle={handleMicToggle}
@@ -122,7 +121,6 @@ export default function PetDiary() {
                 <p className="text-sm text-muted-foreground mt-3">
                   {isRecording ? "Keep talking..." : "Tap to start journaling"}
                 </p>
-              </div>
             </div>
           </>
         )}

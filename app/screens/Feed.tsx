@@ -3,13 +3,14 @@ import { TopBar } from "../components/TopBar";
 import { BottomNav } from "../components/BottomNav";
 import { PetDisplay } from "../components/PetDisplay";
 import { MicButton } from "../components/MicButton";
+import { useMic } from "../context/MicContext";
 import { PromptCard } from "../components/PromptCard";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { RewardCard } from "../components/RewardCard";
 import { motion } from "motion/react";
 
 export default function Feed() {
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [showReward, setShowReward] = useState(false);
@@ -40,20 +41,18 @@ export default function Feed() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
-      // Simulate recording and answer
+    } else {
+      setIsRecording(false);
+      const isCorrect = Math.random() > 0.3;
+      const newAnswers = [...answers, isCorrect];
+      setAnswers(newAnswers);
       setTimeout(() => {
-        setIsRecording(false);
-        const isCorrect = Math.random() > 0.3; // Mock answer
-        setAnswers([...answers, isCorrect]);
-        
-        setTimeout(() => {
-          if (currentQuestion < questions.length - 1) {
-            setCurrentQuestion(currentQuestion + 1);
-            setAnswers([]);
-          } else {
-            setShowReward(true);
-          }
-        }, 2000);
+        if (currentQuestion < questions.length - 1) {
+          setCurrentQuestion(currentQuestion + 1);
+          setAnswers([]);
+        } else {
+          setShowReward(true);
+        }
       }, 2000);
     }
   };

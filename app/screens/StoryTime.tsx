@@ -8,10 +8,11 @@ import { PromptCard } from "../components/PromptCard";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { RewardCard } from "../components/RewardCard";
 import { useState } from "react";
+import { useMic } from "../context/MicContext";
 
 export default function StoryTime() {
   const [currentPage, setCurrentPage] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [hasRead, setHasRead] = useState(false);
   const [showQuestion, setShowQuestion] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
@@ -39,18 +40,20 @@ export default function StoryTime() {
 
   const handleMicToggle = () => {
     if (!showQuestion) {
-      setIsRecording(true);
-      setTimeout(() => {
+      if (!isRecording) {
+        setIsRecording(true);
+      } else {
         setIsRecording(false);
         setHasRead(true);
-      }, 3000);
+      }
     } else {
-      setIsRecording(true);
-      setTimeout(() => {
+      if (!isRecording) {
+        setIsRecording(true);
+      } else {
         setIsRecording(false);
         setHasAnswered(true);
         setTimeout(() => setShowReward(true), 2000);
-      }, 2500);
+      }
     }
   };
 
@@ -170,8 +173,7 @@ export default function StoryTime() {
             )}
 
             {!hasRead && (
-              <div className="flex justify-center">
-                <div className="text-center">
+              <div className="mx-auto w-fit text-center">
                   <MicButton
                     isRecording={isRecording}
                     onToggle={handleMicToggle}
@@ -180,7 +182,6 @@ export default function StoryTime() {
                   <p className="text-sm text-muted-foreground mt-3">
                     {isRecording ? "Reading..." : "Tap to read aloud"}
                   </p>
-                </div>
               </div>
             )}
           </>
@@ -225,8 +226,7 @@ export default function StoryTime() {
             )}
 
             {!hasAnswered && (
-              <div className="flex justify-center">
-                <div className="text-center">
+              <div className="mx-auto w-fit text-center">
                   <MicButton
                     isRecording={isRecording}
                     onToggle={handleMicToggle}
@@ -235,7 +235,6 @@ export default function StoryTime() {
                   <p className="text-sm text-muted-foreground mt-3">
                     {isRecording ? "Tap to stop" : "Tap to answer"}
                   </p>
-                </div>
               </div>
             )}
           </>

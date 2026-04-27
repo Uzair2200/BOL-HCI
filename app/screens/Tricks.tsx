@@ -8,10 +8,11 @@ import { PromptCard } from "../components/PromptCard";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { RewardCard } from "../components/RewardCard";
 import { useState } from "react";
+import { useMic } from "../context/MicContext";
 
 export default function Tricks() {
   const [currentTrick, setCurrentTrick] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [hasAnswered, setHasAnswered] = useState(false);
   const [showReward, setShowReward] = useState(false);
 
@@ -47,17 +48,16 @@ export default function Tricks() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
+    } else {
+      setIsRecording(false);
+      setHasAnswered(true);
       setTimeout(() => {
-        setIsRecording(false);
-        setHasAnswered(true);
-        setTimeout(() => {
-          if (currentTrick < tricks.length - 1) {
-            setCurrentTrick(currentTrick + 1);
-            setHasAnswered(false);
-          } else {
-            setShowReward(true);
-          }
-        }, 2500);
+        if (currentTrick < tricks.length - 1) {
+          setCurrentTrick(currentTrick + 1);
+          setHasAnswered(false);
+        } else {
+          setShowReward(true);
+        }
       }, 2500);
     }
   };

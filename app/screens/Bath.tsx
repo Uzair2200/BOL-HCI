@@ -3,6 +3,7 @@ import { TopBar } from "../components/TopBar";
 import { BottomNav } from "../components/BottomNav";
 import { PetDisplay } from "../components/PetDisplay";
 import { MicButton } from "../components/MicButton";
+import { useMic } from "../context/MicContext";
 import { PromptCard } from "../components/PromptCard";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { RewardCard } from "../components/RewardCard";
@@ -10,7 +11,7 @@ import { motion } from "motion/react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
 export default function Bath() {
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [hasSpoken, setHasSpoken] = useState(false);
   const [showReward, setShowReward] = useState(false);
   const [bubbles, setBubbles] = useState(0);
@@ -18,12 +19,11 @@ export default function Bath() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
-      setTimeout(() => {
-        setIsRecording(false);
-        setHasSpoken(true);
-        setBubbles(8); // Simulate bubble count based on details
-        setTimeout(() => setShowReward(true), 2000);
-      }, 4000);
+    } else {
+      setIsRecording(false);
+      setHasSpoken(true);
+      setBubbles(8);
+      setTimeout(() => setShowReward(true), 2000);
     }
   };
 
@@ -122,8 +122,7 @@ export default function Bath() {
           </motion.div>
         )}
 
-        <div className="flex justify-center">
-          <div className="text-center">
+        <div className="mx-auto w-fit text-center">
             <MicButton
               isRecording={isRecording}
               onToggle={handleMicToggle}
@@ -133,7 +132,6 @@ export default function Bath() {
             <p className="text-sm text-muted-foreground mt-3">
               {isRecording ? "Keep describing..." : "Tap and describe"}
             </p>
-          </div>
         </div>
       </div>
 

@@ -56,13 +56,16 @@ export default function Rankings() {
   return (
     <div className="min-h-screen bg-[#F5F0E8] flex flex-col">
       <div className="sticky top-0 z-20 bg-[#F5F0E8]/95 border-b border-[#E6DDCE] px-5 py-4 backdrop-blur-sm">
-        <div className="relative flex items-center justify-center">
-          <h1 className="text-xl font-bold text-[#3F2F63]">Rankings</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-[#3F2F63]">Friends Rankings</h1>
           <button
             onClick={() => navigate("/rankings/add-friends")}
-            className="absolute right-0 inline-flex items-center gap-1.5 rounded-full border border-violet-400 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-500 to-violet-500 px-4 py-2 text-sm font-bold text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all"
+            style={{
+              border: '2px solid rgba(255,255,255,0.3)',
+            }}
           >
-            <span className="text-sm leading-none">+</span>
+            <span className="text-lg leading-none">+</span>
             <span>Add Friends</span>
           </button>
         </div>
@@ -78,12 +81,12 @@ export default function Rankings() {
               <span className="font-semibold">Your Pet</span>
             </div>
 
-            <div className="text-right">
+            <div className="inline-flex items-center justify-end gap-2 text-right">
               <div className="inline-flex items-center gap-1 text-violet-700 font-bold">
                 <AwardIcon className="w-4 h-4" />
                 <span>Lvl 4</span>
               </div>
-              <div className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${tierStyles(yourTier)}`}>
+              <div className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${tierStyles(yourTier)}`}>
                 {yourTier}
               </div>
             </div>

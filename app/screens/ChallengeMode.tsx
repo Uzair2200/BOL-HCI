@@ -5,10 +5,11 @@ import { TopBar } from "../components/TopBar";
 import { BottomNav } from "../components/BottomNav";
 import { PetDisplay } from "../components/PetDisplay";
 import { MicButton } from "../components/MicButton";
+import { useMic } from "../context/MicContext";
 
 export default function ChallengeMode() {
   const [stage, setStage] = useState<"lobby" | "battle" | "result">("lobby");
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [myScore, setMyScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
 
@@ -19,16 +20,16 @@ export default function ChallengeMode() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
-      setTimeout(() => {
-        setIsRecording(false);
-        const score = Math.floor(Math.random() * 50) + 50;
-        setMyScore(myScore + score);
-        setOpponentScore(opponentScore + Math.floor(Math.random() * 40) + 40);
-        
-        if (myScore + opponentScore > 200) {
-          setTimeout(() => setStage("result"), 1500);
-        }
-      }, 3000);
+    } else {
+      setIsRecording(false);
+      const score = Math.floor(Math.random() * 50) + 50;
+      const newMy = myScore + score;
+      const newOpp = opponentScore + Math.floor(Math.random() * 40) + 40;
+      setMyScore(newMy);
+      setOpponentScore(newOpp);
+      if (newMy + newOpp > 200) {
+        setTimeout(() => setStage("result"), 1500);
+      }
     }
   };
 

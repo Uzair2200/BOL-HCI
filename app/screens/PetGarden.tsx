@@ -4,6 +4,7 @@ import { TopBar } from "../components/TopBar";
 import { BottomNav } from "../components/BottomNav";
 import { MicButton } from "../components/MicButton";
 import { useState } from "react";
+import { useMic } from "../context/MicContext";
 
 interface Plant {
   word: string;
@@ -12,7 +13,7 @@ interface Plant {
 }
 
 export default function PetGarden() {
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [selectedPlant, setSelectedPlant] = useState<number | null>(null);
   const [plants, setPlants] = useState<Plant[]>([
     { word: "happy", growth: 80, emoji: "🌻" },
@@ -24,14 +25,12 @@ export default function PetGarden() {
   const handleMicToggle = () => {
     if (!isRecording && selectedPlant !== null) {
       setIsRecording(true);
-      setTimeout(() => {
-        setIsRecording(false);
-        // Grow the plant
-        setPlants(prev => prev.map((p, i) => 
-          i === selectedPlant ? { ...p, growth: Math.min(100, p.growth + 20) } : p
-        ));
-        setSelectedPlant(null);
-      }, 3000);
+    } else if (isRecording) {
+      setIsRecording(false);
+      setPlants(prev => prev.map((p, i) =>
+        i === selectedPlant ? { ...p, growth: Math.min(100, p.growth + 20) } : p
+      ));
+      setSelectedPlant(null);
     }
   };
 
@@ -112,8 +111,7 @@ export default function PetGarden() {
           </motion.div>
         )}
 
-        <div className="flex justify-center">
-          <div className="text-center">
+        <div className="mx-auto w-fit text-center">
             <MicButton
               isRecording={isRecording}
               onToggle={handleMicToggle}
@@ -127,7 +125,6 @@ export default function PetGarden() {
                   ? "Tap to stop" 
                   : "Tap to speak"}
             </p>
-          </div>
         </div>
       </div>
 

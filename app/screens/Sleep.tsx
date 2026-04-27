@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { TopBar } from "../components/TopBar";
 import { BottomNav } from "../components/BottomNav";
 import { PetDisplay } from "../components/PetDisplay";
@@ -6,21 +6,23 @@ import { MicButton } from "../components/MicButton";
 import { PromptCard } from "../components/PromptCard";
 import { RewardCard } from "../components/RewardCard";
 import { motion } from "motion/react";
+import { useMic } from "../context/MicContext";
 
 export default function Sleep() {
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [readingTime, setReadingTime] = useState(0);
   const [showReward, setShowReward] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const story = "The little dragon loved to fly among the clouds. Every evening, it would soar high above the mountains, watching the sunset paint the sky in beautiful colors.";
 
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
-      const interval = setInterval(() => {
+      intervalRef.current = setInterval(() => {
         setReadingTime(prev => {
           if (prev >= 100) {
-            clearInterval(interval);
+            clearInterval(intervalRef.current!);
             setIsRecording(false);
             setTimeout(() => setShowReward(true), 1500);
             return 100;
@@ -28,6 +30,9 @@ export default function Sleep() {
           return prev + 10;
         });
       }, 800);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setIsRecording(false);
     }
   };
 
@@ -144,8 +149,7 @@ export default function Sleep() {
           </motion.div>
         )}
 
-        <div className="flex justify-center">
-          <div className="text-center">
+        <div className="mx-auto w-fit text-center">
             <MicButton
               isRecording={isRecording}
               onToggle={handleMicToggle}
@@ -155,7 +159,6 @@ export default function Sleep() {
             <p className="text-sm text-muted-foreground mt-3">
               {isRecording ? "Reading..." : "Tap to start reading"}
             </p>
-          </div>
         </div>
       </div>
 

@@ -7,10 +7,11 @@ import { PetDisplay } from "../components/PetDisplay";
 import { MicButton } from "../components/MicButton";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { RewardCard } from "../components/RewardCard";
+import { useMic } from "../context/MicContext";
 
 export default function ListenLearn() {
   const [stage, setStage] = useState<"listen" | "question">("listen");
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [hasAnswered, setHasAnswered] = useState(false);
   const [showReward, setShowReward] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -30,11 +31,10 @@ export default function ListenLearn() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
-      setTimeout(() => {
-        setIsRecording(false);
-        setHasAnswered(true);
-        setTimeout(() => setShowReward(true), 2000);
-      }, 2500);
+    } else {
+      setIsRecording(false);
+      setHasAnswered(true);
+      setTimeout(() => setShowReward(true), 2000);
     }
   };
 

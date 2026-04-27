@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { ZapIcon, ClockIcon } from "../components/AppIcons";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { TopBar } from "../components/TopBar";
 import { BottomNav } from "../components/BottomNav";
 import { PetDisplay } from "../components/PetDisplay";
@@ -8,13 +8,15 @@ import { MicButton } from "../components/MicButton";
 import { PromptCard } from "../components/PromptCard";
 import { FeedbackCard } from "../components/FeedbackCard";
 import { RewardCard } from "../components/RewardCard";
+import { useMic } from "../context/MicContext";
 
 export default function Play() {
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
+  const { isRecording, setIsRecording } = useMic();
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [showReward, setShowReward] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const games = [
     { id: "category", title: "Category Sprint", emoji: "🏃", color: "bg-yellow-50", borderColor: "border-yellow-200" },
@@ -30,11 +32,10 @@ export default function Play() {
   const handleMicToggle = () => {
     if (!isRecording) {
       setIsRecording(true);
-      // Simulate game play
-      const interval = setInterval(() => {
+      intervalRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
-            clearInterval(interval);
+            clearInterval(intervalRef.current!);
             setIsRecording(false);
             setShowReward(true);
             return 0;
@@ -45,6 +46,10 @@ export default function Play() {
           setScore(prev => prev + 1);
         }
       }, 1000);
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setIsRecording(false);
+      setShowReward(true);
     }
   };
 
