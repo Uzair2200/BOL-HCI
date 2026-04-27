@@ -120,6 +120,33 @@ export default function Home() {
     { id: "listen", title: "Listen & Learn", icon: HeadphonesIcon, color: "#0369A1", bgColor: "bg-sky-300", path: "/listen" },
   ];
 
+  const needsStats = [
+    {
+      label: "Health",
+      value: 85,
+      color: "#F87171",
+      trackColor: "#FEE2E2",
+      icon: HeartIcon,
+      iconColor: "#EF4444",
+    },
+    {
+      label: "Hunger",
+      value: 45,
+      color: "#34D399",
+      trackColor: "#D1FAE5",
+      icon: UtensilsIcon,
+      iconColor: "#10B981",
+    },
+    {
+      label: "Happiness",
+      value: 92,
+      color: "#F59E0B",
+      trackColor: "#FEF3C7",
+      icon: SparklesIcon,
+      iconColor: "#F59E0B",
+    },
+  ];
+
   const getStatusBadge = (status?: string) => {
     if (status === "urgent") {
       return (
@@ -165,40 +192,78 @@ export default function Home() {
           
           <PetDisplay mood="happy" size="lg" />
           
-          {/* Needs Bar */}
-          <div className="mt-6 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <HeartIcon className="w-4 h-4 text-red-400" />
-                <span className="text-sm font-medium">Health</span>
-              </div>
-              <span className="text-sm text-muted-foreground">85%</span>
-            </div>
-            <div className="h-2 bg-white rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-red-400 to-pink-400" style={{ width: "85%" }} />
-            </div>
+          {/* Needs - 3D circular meters */}
+          <div className="mt-7 grid grid-cols-3 gap-3">
+            {needsStats.map((stat) => {
+              const Icon = stat.icon;
+              const size = 88;
+              const stroke = 9;
+              const radius = (size - stroke) / 2;
+              const circumference = 2 * Math.PI * radius;
+              const progressOffset = circumference * (1 - stat.value / 100);
 
-            <div className="flex items-center justify-between mt-3">
-              <div className="flex items-center gap-2">
-                <UtensilsIcon className="w-4 h-4 text-green-400" />
-                <span className="text-sm font-medium">Hunger</span>
-              </div>
-              <span className="text-sm text-muted-foreground">45%</span>
-            </div>
-            <div className="h-2 bg-white rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-green-400 to-emerald-400" style={{ width: "45%" }} />
-            </div>
+              return (
+                <div
+                  key={stat.label}
+                  className="relative rounded-2xl px-2 py-3 text-center"
+                  style={{
+                    background: "linear-gradient(160deg, rgba(255,255,255,0.95), rgba(246,241,235,0.95))",
+                    boxShadow: "inset 0 2px 5px rgba(255,255,255,0.95), inset 0 -3px 6px rgba(156,132,110,0.18), 0 8px 18px rgba(111,89,66,0.15)",
+                  }}
+                >
+                  <div className="relative mx-auto mb-2" style={{ width: size, height: size }}>
+                    <svg width={size} height={size} className="-rotate-90">
+                      <circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        fill="none"
+                        stroke={stat.trackColor}
+                        strokeWidth={stroke}
+                      />
+                      <circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        fill="none"
+                        stroke={stat.color}
+                        strokeLinecap="round"
+                        strokeWidth={stroke}
+                        strokeDasharray={circumference}
+                        strokeDashoffset={progressOffset}
+                        style={{
+                          filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.18))",
+                          transition: "stroke-dashoffset 0.6s ease",
+                        }}
+                      />
+                    </svg>
 
-            <div className="flex items-center justify-between mt-3">
-              <div className="flex items-center gap-2">
-                <SparklesIcon className="w-4 h-4 text-yellow-400" />
-                <span className="text-sm font-medium">Happiness</span>
-              </div>
-              <span className="text-sm text-muted-foreground">92%</span>
-            </div>
-            <div className="h-2 bg-white rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-yellow-400 to-orange-400" style={{ width: "92%" }} />
-            </div>
+                    <div
+                      className="absolute inset-[15px] rounded-full flex flex-col items-center justify-center"
+                      style={{
+                        background: "radial-gradient(circle at 30% 25%, #ffffff 0%, #f3efe9 70%, #e4d8ca 100%)",
+                        boxShadow: "inset 0 3px 6px rgba(255,255,255,0.95), inset 0 -4px 6px rgba(120,98,77,0.18)",
+                      }}
+                    >
+                      <Icon className="w-4 h-4 mb-0.5" style={{ color: stat.iconColor }} />
+                      <span className="text-[11px] font-bold leading-none" style={{ color: stat.iconColor }}>
+                        {stat.value}%
+                      </span>
+                    </div>
+
+                    <div
+                      className="absolute top-[14px] left-[18px] w-[36px] h-[16px] rounded-full"
+                      style={{
+                        background: "linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(255,255,255,0))",
+                        transform: "rotate(-18deg)",
+                      }}
+                    />
+                  </div>
+
+                  <p className="text-xs font-semibold text-slate-700">{stat.label}</p>
+                </div>
+              );
+            })}
           </div>
           
           {/* Scroll indicator */}

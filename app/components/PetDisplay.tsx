@@ -116,6 +116,161 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
   const tickleMoves = useRef<number[]>([]);
   const dragHistory = useRef<Array<{ x: number; y: number; time: number }>>([]);
   const pointerMoveRaf = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioUnlockedRef = useRef(false);
+  const lastSoundedActionRef = useRef<ActionState>("idle");
+
+  const getAudioContext = () => {
+    if (typeof window === "undefined") return null;
+    if (!audioContextRef.current) {
+      const AudioCtor = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtor) return null;
+      audioContextRef.current = new AudioCtor();
+    }
+    return audioContextRef.current;
+  };
+
+  const unlockAudio = () => {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    audioUnlockedRef.current = true;
+    if (ctx.state === "suspended") {
+      void ctx.resume();
+    }
+  };
+
+  const playTone = (opts: {
+    frequency: number;
+    duration?: number;
+    volume?: number;
+    type?: OscillatorType;
+    slideTo?: number;
+    attack?: number;
+    release?: number;
+  }) => {
+    if (!audioUnlockedRef.current) return;
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state !== "running") {
+      void ctx.resume().then(() => playTone(opts));
+      return;
+    }
+
+    const now = ctx.currentTime;
+    const duration = opts.duration ?? 0.11;
+    const attack = opts.attack ?? 0.005;
+    const release = opts.release ?? 0.08;
+    const volume = opts.volume ?? 0.04;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = opts.type ?? "sine";
+    osc.frequency.setValueAtTime(opts.frequency, now);
+
+    if (typeof opts.slideTo === "number") {
+      osc.frequency.exponentialRampToValueAtTime(Math.max(30, opts.slideTo), now + duration);
+    }
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(volume, now + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(attack + 0.01, duration - release));
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + duration);
+  };
+
+  const playNoise = (duration = 0.1, volume = 0.02) => {
+    if (!audioUnlockedRef.current) return;
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state !== "running") {
+      void ctx.resume().then(() => playNoise(duration, volume));
+      return;
+    }
+
+    const length = Math.max(1, Math.floor(ctx.sampleRate * duration));
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+    const channel = buffer.getChannelData(0);
+    for (let i = 0; i < length; i += 1) {
+      channel[i] = (Math.random() * 2 - 1) * Math.exp(-i / (length * 0.6));
+    }
+
+    const src = ctx.createBufferSource();
+    const hp = ctx.createBiquadFilter();
+    const lp = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+
+    hp.type = "highpass";
+    hp.frequency.value = 450;
+    lp.type = "lowpass";
+    lp.frequency.value = 3200;
+    gain.gain.value = volume;
+
+    src.buffer = buffer;
+    src.connect(hp);
+    hp.connect(lp);
+    lp.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+  };
+
+  const playSoundCue = (cue: "tap" | "giggle" | "honk" | "sneeze" | "ouch" | "ear" | "poke" | "spin" | "throw" | "squish" | "stretch" | "listening") => {
+    switch (cue) {
+      case "tap":
+        playTone({ frequency: 460 + Math.random() * 90, duration: 0.06, volume: 0.018, type: "triangle" });
+        break;
+      case "giggle":
+        playTone({ frequency: 520, slideTo: 690, duration: 0.09, volume: 0.038, type: "triangle" });
+        setTimeout(() => playTone({ frequency: 610, slideTo: 790, duration: 0.09, volume: 0.034, type: "triangle" }), 70);
+        setTimeout(() => playTone({ frequency: 700, slideTo: 920, duration: 0.07, volume: 0.028, type: "sine" }), 130);
+        break;
+      case "honk":
+        playTone({ frequency: 310, slideTo: 360, duration: 0.1, volume: 0.03, type: "square" });
+        break;
+      case "sneeze":
+        playNoise(0.085, 0.03);
+        setTimeout(() => playTone({ frequency: 620, slideTo: 420, duration: 0.07, volume: 0.02, type: "triangle" }), 20);
+        break;
+      case "ouch":
+        playNoise(0.12, 0.048);
+        playTone({ frequency: 260, slideTo: 160, duration: 0.17, volume: 0.052, type: "sawtooth" });
+        setTimeout(() => playTone({ frequency: 200, slideTo: 130, duration: 0.1, volume: 0.04, type: "triangle" }), 45);
+        break;
+      case "ear":
+        playTone({ frequency: 960, slideTo: 1240, duration: 0.05, volume: 0.018, type: "sine" });
+        break;
+      case "poke":
+        playTone({ frequency: 390, slideTo: 280, duration: 0.07, volume: 0.02, type: "square" });
+        break;
+      case "spin":
+        playTone({ frequency: 380, slideTo: 950, duration: 0.2, volume: 0.022, type: "triangle" });
+        break;
+      case "throw":
+        playTone({ frequency: 820, slideTo: 240, duration: 0.25, volume: 0.026, type: "triangle" });
+        break;
+      case "squish":
+        playTone({ frequency: 180, slideTo: 120, duration: 0.08, volume: 0.024, type: "sine" });
+        break;
+      case "stretch":
+        playTone({ frequency: 180, slideTo: 360, duration: 0.09, volume: 0.022, type: "sine" });
+        break;
+      case "listening":
+        playTone({ frequency: 520, slideTo: 640, duration: 0.07, volume: 0.014, type: "sine" });
+        break;
+      default:
+        break;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        void audioContextRef.current.close();
+      }
+    };
+  }, []);
 
   // Get body zone from tap position
   const getBodyZone = (x: number, y: number): BodyZone => {
@@ -193,6 +348,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
   // Handle tap/click
   const handleTap = (event: React.MouseEvent | React.TouchEvent) => {
     if (!containerRef.current || isBeingDragged) return;
+    unlockAudio();
     
     const now = Date.now();
     const timeSinceLast = now - lastTapTime;
@@ -240,6 +396,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
     // Too many rapid taps - hurt
     if (currentTapCount >= 5) {
       setActionState("hurt");
+      playSoundCue("ouch");
       setRotation(prev => prev + 720);
       addTapEffect(x, y, "ow");
       updateMoodPoints(-10);
@@ -251,21 +408,25 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
     if (currentTapCount >= 3) {
       if (zone === "belly") {
         setActionState("belly_tickle");
+        playSoundCue("giggle");
         addTapEffect(x, y, "laugh");
         addTapEffect(x - 10, y - 10, "laugh");
         addTapEffect(x + 10, y - 10, "laugh");
         updateMoodPoints(8);
       } else if (zone === "nose") {
         setActionState("sneezing");
+        playSoundCue("sneeze");
         addTapEffect(x, y, "honk");
         addTapEffect(x + 10, y - 10, "honk");
         updateMoodPoints(3);
       } else if (zone === "left_eye" || zone === "right_eye") {
         setActionState("eye_poke");
+        playSoundCue("ouch");
         addTapEffect(x, y, "ow");
         updateMoodPoints(-8);
       } else {
         setActionState("spinning");
+        playSoundCue("spin");
         setRotation(prev => prev + 360);
         addTapEffect(x, y, "star");
         addTapEffect(x + 10, y - 10, "star");
@@ -279,6 +440,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
       case "left_ear":
       case "right_ear":
         setActionState("ear_flick");
+        playSoundCue("ear");
         addTapEffect(x, y, "sparkle");
         updateMoodPoints(2);
         break;
@@ -286,17 +448,20 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
       case "left_eye":
       case "right_eye":
         setActionState("eye_poke");
+        playSoundCue("ouch");
         addTapEffect(x, y, "ow");
         updateMoodPoints(-5);
         break;
         
       case "nose":
         setActionState("nose_honk");
+        playSoundCue("honk");
         addTapEffect(x, y, "honk");
         updateMoodPoints(3);
         break;
         
       case "mouth":
+        playSoundCue("tap");
         addTapEffect(x, y, "music_note");
         setRotation(prev => prev + (Math.random() > 0.5 ? 10 : -10));
         updateMoodPoints(2);
@@ -304,6 +469,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
         
       case "belly":
         setActionState("giggling");
+        playSoundCue("giggle");
         addTapEffect(x, y, "heart");
         addTapEffect(x - 15, y, "heart");
         addTapEffect(x + 15, y, "heart");
@@ -312,18 +478,21 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
         
       case "left_arm":
       case "right_arm":
+        playSoundCue("tap");
         addTapEffect(x, y, "sparkle");
         setRotation(prev => prev + (Math.random() > 0.5 ? 15 : -15));
         updateMoodPoints(2);
         break;
         
       case "feet":
+        playSoundCue("tap");
         addTapEffect(x, y, "star");
         setRotation(prev => prev + (Math.random() > 0.5 ? 15 : -15));
         updateMoodPoints(3);
         break;
         
       default:
+        playSoundCue("tap");
         addTapEffect(x, y, "heart");
         setRotation(prev => prev + (Math.random() > 0.5 ? 10 : -10));
         updateMoodPoints(1);
@@ -333,6 +502,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
   // Drag handlers
   const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
     if (!containerRef.current) return;
+    unlockAudio();
     
     setIsBeingDragged(true);
     setActionState("dragging");
@@ -405,6 +575,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
     if (speed > 8) {
       // Thrown
       setActionState("thrown");
+      playSoundCue("throw");
       
       // Animate throw arc
       const throwX = dragPosition.x + dragVelocity.x * 3;
@@ -433,6 +604,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
 
   // Long press handlers
   const handlePressStart = (e: React.TouchEvent | React.MouseEvent) => {
+    unlockAudio();
     longPressLevel.current = 0;
     
     longPressTimer.current = setTimeout(() => {
@@ -517,6 +689,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
             y: Math.max(0.7, prev.y - 0.05)
           }));
           setActionState("squished");
+          playSoundCue("squish");
           addTapEffect(50, 50, "star");
         } else if (delta > 3) {
           setSquishScale(prev => ({
@@ -524,6 +697,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
             y: Math.min(1.4, prev.y + 0.05)
           }));
           setActionState("stretched");
+          playSoundCue("stretch");
           addTapEffect(50, 50, "sparkle");
         }
       }
@@ -658,6 +832,26 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
       setIsSpeaking(false);
     }
   }, [isListening]);
+
+  useEffect(() => {
+    if (!audioUnlockedRef.current || lastSoundedActionRef.current === actionState) {
+      lastSoundedActionRef.current = actionState;
+      return;
+    }
+
+    switch (actionState) {
+      case "dizzy":
+        playSoundCue("spin");
+        break;
+      case "listening":
+        playSoundCue("listening");
+        break;
+      default:
+        break;
+    }
+
+    lastSoundedActionRef.current = actionState;
+  }, [actionState]);
 
   // Dynamic animation based on action state
   const getMoodAnimation = () => {
@@ -918,88 +1112,168 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
         {/* Interactive Virtual Pet Panda */}
         <motion.svg 
           viewBox="0 0 200 220" 
-          className="w-full h-full drop-shadow-2xl"
+          className="w-full h-full"
+          style={{
+            filter: `drop-shadow(0px 12px 20px rgba(40, 40, 48, 0.26)) drop-shadow(0px 4px 6px rgba(24, 24, 30, 0.18)) drop-shadow(0px 0px 30px rgba(170, 190, 210, 0.08))`
+          }}
           animate={{ scale: [1, 1.012, 1] }}
           transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
         >
           <defs>
-            {/* Gradients */}
-            <radialGradient id="bodyGradient" cx="45%" cy="35%">
+            {/* White fur gradients */}
+            <radialGradient id="headGradient" cx="35%" cy="28%" r="65%" gradientUnits="objectBoundingBox">
               <stop offset="0%" stopColor="#FFFFFF" />
-              <stop offset="50%" stopColor="#F8F9FA" />
-              <stop offset="100%" stopColor="#E8EAED" />
+              <stop offset="25%" stopColor="#F2F4F7" />
+              <stop offset="60%" stopColor="#DEE3EA" />
+              <stop offset="85%" stopColor="#C4CBD4" />
+              <stop offset="100%" stopColor="#AEB6C0" />
             </radialGradient>
-            
-            <radialGradient id="headGradient" cx="40%" cy="30%">
+
+            <radialGradient id="bodyGradient" cx="38%" cy="30%" r="70%" gradientUnits="objectBoundingBox">
               <stop offset="0%" stopColor="#FFFFFF" />
-              <stop offset="60%" stopColor="#F8F9FA" />
-              <stop offset="100%" stopColor="#E8EAED" />
+              <stop offset="30%" stopColor="#F0F3F6" />
+              <stop offset="65%" stopColor="#DCE1E8" />
+              <stop offset="90%" stopColor="#C0C7D1" />
+              <stop offset="100%" stopColor="#A8B0BB" />
             </radialGradient>
-            
-            <radialGradient id="bellyGradient" cx="50%" cy="40%">
-              <stop offset="0%" stopColor="#FFF5EB" />
-              <stop offset="70%" stopColor="#FFEFD5" />
-              <stop offset="100%" stopColor="#FFE4C4" />
+
+            <radialGradient id="bellyGradient" cx="45%" cy="38%" r="60%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="40%" stopColor="#F4F6F9" />
+              <stop offset="75%" stopColor="#E2E7EE" />
+              <stop offset="100%" stopColor="#C7CFD9" />
             </radialGradient>
-            
-            <radialGradient id="pawGradient" cx="40%" cy="30%">
-              <stop offset="0%" stopColor="#4A5568" />
-              <stop offset="60%" stopColor="#374151" />
-              <stop offset="100%" stopColor="#1F2937" />
+
+            {/* Black fur gradients */}
+            <radialGradient id="earGradient" cx="40%" cy="30%" r="65%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#4A5068" />
+              <stop offset="35%" stopColor="#2A2E42" />
+              <stop offset="75%" stopColor="#181B2C" />
+              <stop offset="100%" stopColor="#0C0E18" />
             </radialGradient>
-            
-            <radialGradient id="earGradient" cx="35%" cy="25%">
-              <stop offset="0%" stopColor="#374151" />
-              <stop offset="70%" stopColor="#1F2937" />
-              <stop offset="100%" stopColor="#111827" />
+
+            <radialGradient id="innerEarGradient" cx="50%" cy="40%" r="55%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#586079" stopOpacity="0.55" />
+              <stop offset="50%" stopColor="#343A50" stopOpacity="0.45" />
+              <stop offset="100%" stopColor="#1A1E2E" stopOpacity="0.25" />
             </radialGradient>
-            
-            <radialGradient id="eyePatchGradient" cx="30%" cy="25%">
-              <stop offset="0%" stopColor="#2D3748" />
-              <stop offset="70%" stopColor="#1A202C" />
-              <stop offset="100%" stopColor="#000000" />
+
+            <radialGradient id="eyePatchGradient" cx="28%" cy="22%" r="70%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#33384A" />
+              <stop offset="30%" stopColor="#171B26" />
+              <stop offset="70%" stopColor="#0C0F16" />
+              <stop offset="100%" stopColor="#04060A" />
             </radialGradient>
-            
-            <radialGradient id="noseGradient" cx="30%" cy="25%">
-              <stop offset="0%" stopColor="#2D3748" />
-              <stop offset="100%" stopColor="#1A202C" />
+
+            <radialGradient id="pawGradient" cx="35%" cy="25%" r="70%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#484E68" />
+              <stop offset="40%" stopColor="#282C40" />
+              <stop offset="80%" stopColor="#141620" />
+              <stop offset="100%" stopColor="#080A12" />
             </radialGradient>
-            
-            <radialGradient id="cheekBlush" cx="50%" cy="50%">
-              <stop offset="0%" stopColor="#FFB3C1" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="#FFB3C1" stopOpacity="0" />
-            </radialGradient>
-            
-            <radialGradient id="eyeShine" cx="30%" cy="30%">
+
+            {/* Shines and effects */}
+            <radialGradient id="eyeShine" cx="25%" cy="22%" r="55%" gradientUnits="objectBoundingBox">
               <stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
-              <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.8" />
+              <stop offset="40%" stopColor="#FFFFFF" stopOpacity="0.9" />
+              <stop offset="70%" stopColor="#FFFFFF" stopOpacity="0.5" />
               <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
             </radialGradient>
-            
-            <radialGradient id="softShadow" cx="50%" cy="50%">
-              <stop offset="0%" stopColor="#000000" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+
+            <radialGradient id="eyeShine2" cx="70%" cy="72%" r="50%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#C8EEFF" stopOpacity="0.8" />
+              <stop offset="60%" stopColor="#A8D8FF" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#88C8FF" stopOpacity="0" />
             </radialGradient>
+
+            <radialGradient id="noseGradient" cx="28%" cy="22%" r="65%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#6B7280" />
+              <stop offset="40%" stopColor="#3E4552" />
+              <stop offset="80%" stopColor="#1F2430" />
+              <stop offset="100%" stopColor="#0B0E14" />
+            </radialGradient>
+
+            <radialGradient id="cheekBlush" cx="50%" cy="50%" r="50%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#D4D9E2" stopOpacity="0.08" />
+              <stop offset="50%" stopColor="#CCD2DC" stopOpacity="0.05" />
+              <stop offset="100%" stopColor="#C4CBD8" stopOpacity="0" />
+            </radialGradient>
+
+            <radialGradient id="softShadow" cx="50%" cy="50%" r="50%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#202530" stopOpacity="0.3" />
+              <stop offset="60%" stopColor="#141922" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#0A0E14" stopOpacity="0" />
+            </radialGradient>
+
+            <radialGradient id="aoShadow" cx="50%" cy="50%" r="50%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#262C38" stopOpacity="0.35" />
+              <stop offset="70%" stopColor="#161B24" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#0A0E14" stopOpacity="0" />
+            </radialGradient>
+
+            <linearGradient id="rimLight" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#DCF0FF" stopOpacity="0" />
+              <stop offset="70%" stopColor="#C8E8FF" stopOpacity="0" />
+              <stop offset="90%" stopColor="#B8DCFF" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#A8D0FF" stopOpacity="0.5" />
+            </linearGradient>
+
+            <radialGradient id="headRimLight" cx="72%" cy="75%" r="45%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#C8E8FF" stopOpacity="0.5" />
+              <stop offset="50%" stopColor="#A8D4FF" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#88BCFF" stopOpacity="0" />
+            </radialGradient>
+
+            <radialGradient id="bodyRimLight" cx="75%" cy="78%" r="40%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#C8E8FF" stopOpacity="0.45" />
+              <stop offset="60%" stopColor="#A8D0FF" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#88B8FF" stopOpacity="0" />
+            </radialGradient>
+
+            <radialGradient id="topHighlight" cx="50%" cy="50%" r="50%" gradientUnits="objectBoundingBox">
+              <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.6" />
+              <stop offset="40%" stopColor="#F8FBFF" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#F1F6FF" stopOpacity="0" />
+            </radialGradient>
+
+            <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
 
           <g transform={getBodyTransform()}>
             {/* Ground shadow */}
-            <ellipse cx="100" cy="200" rx="50" ry="8" fill="url(#softShadow)" />
+            <ellipse cx="100" cy="204" rx="55" ry="10" fill="url(#softShadow)" />
+            <ellipse cx="100" cy="204" rx="40" ry="6" fill="url(#softShadow)" opacity="0.6" />
+            <ellipse cx="104" cy="205" rx="52" ry="9" fill="url(#softShadow)" opacity="0.8" />
 
             {/* Back Legs */}
-            <ellipse cx="70" cy="185" rx="23" ry="19" fill="url(#pawGradient)" />
-            <ellipse cx="130" cy="185" rx="23" ry="19" fill="url(#pawGradient)" />
-            <ellipse cx="70" cy="188" rx="11" ry="8" fill="#5A6978" />
-            <ellipse cx="130" cy="188" rx="11" ry="8" fill="#5A6978" />
+            <ellipse cx="72" cy="186" rx="24" ry="20" fill="url(#pawGradient)" />
+            <ellipse cx="65" cy="179" rx="10" ry="7" fill="#4A5068" opacity="0.5" />
+            <ellipse cx="72" cy="192" rx="12" ry="8" fill="#3A3E58" />
+            <ellipse cx="63" cy="192" rx="5" ry="4" fill="#4A5068" />
+            <ellipse cx="81" cy="192" rx="5" ry="4" fill="#4A5068" />
+            <ellipse cx="80" cy="190" rx="9" ry="6" fill="url(#headRimLight)" opacity="0.7" />
+
+            <ellipse cx="128" cy="186" rx="24" ry="20" fill="url(#pawGradient)" />
+            <ellipse cx="121" cy="179" rx="10" ry="7" fill="#4A5068" opacity="0.5" />
+            <ellipse cx="128" cy="192" rx="12" ry="8" fill="#3A3E58" />
+            <ellipse cx="119" cy="192" rx="5" ry="4" fill="#4A5068" />
+            <ellipse cx="137" cy="192" rx="5" ry="4" fill="#4A5068" />
+            <ellipse cx="136" cy="190" rx="9" ry="6" fill="url(#headRimLight)" opacity="0.7" />
 
             {/* Body with breathing */}
             <motion.ellipse 
               cx="100" 
               cy="145" 
-              rx="58" 
-              ry="50" 
+              rx="60" 
+              ry="52" 
               fill="url(#bodyGradient)"
-              animate={{ ry: actionState === "falling_asleep" ? [50, 52, 50] : [50, 51, 50] }}
+              animate={{ ry: actionState === "falling_asleep" ? [52, 54, 52] : [52, 53, 52] }}
               transition={{
                 duration: actionState === "falling_asleep" ? 3 : 2.2,
                 repeat: Infinity,
@@ -1007,8 +1281,28 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
               }}
             />
             
-            {/* Belly patch */}
-            <ellipse cx="100" cy="150" rx="40" ry="34" fill="url(#bellyGradient)" />
+            {/* Belly and body shading passes */}
+            <ellipse cx="100" cy="152" rx="42" ry="36" fill="url(#bellyGradient)" />
+            <ellipse cx="92" cy="140" rx="22" ry="16" fill="url(#topHighlight)" />
+            <ellipse cx="58" cy="152" rx="12" ry="30" fill="url(#aoShadow)" opacity="0.7" />
+            <ellipse cx="142" cy="152" rx="12" ry="30" fill="url(#aoShadow)" opacity="0.7" />
+            <ellipse cx="100" cy="188" rx="46" ry="16" fill="url(#aoShadow)" opacity="0.5" />
+            <motion.ellipse
+              cx="100"
+              cy="145"
+              rx="60"
+              ry="52"
+              fill="url(#bodyRimLight)"
+              animate={{ ry: actionState === "falling_asleep" ? [52, 54, 52] : [52, 53, 52] }}
+              transition={{
+                duration: actionState === "falling_asleep" ? 3 : 2.2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
+            <ellipse cx="78" cy="118" rx="14" ry="10" fill="#FFFEF8" opacity="0.6" />
+            <ellipse cx="74" cy="115" rx="6" ry="4" fill="#FFFFFF" opacity="0.8" />
+            <ellipse cx="100" cy="178" rx="40" ry="12" fill="#E4EBF5" opacity="0.1" />
 
             {/* Front Arms - mood-based positioning */}
             {currentMood === "excited" || currentMood === "playful" ? (
@@ -1065,8 +1359,8 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
               </>
             ) : (
               <>
-                <ellipse cx="60" cy="140" rx="19" ry="25" fill="url(#pawGradient)" />
-                <ellipse cx="140" cy="140" rx="19" ry="25" fill="url(#pawGradient)" />
+                <ellipse cx="60" cy="140" rx="21" ry="27" fill="url(#pawGradient)" />
+                <ellipse cx="140" cy="140" rx="21" ry="27" fill="url(#pawGradient)" />
                 <ellipse cx="60" cy="147" rx="10" ry="13" fill="#5A6978" />
                 <ellipse cx="140" cy="147" rx="10" ry="13" fill="#5A6978" />
               </>
@@ -1075,42 +1369,80 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
             {/* Head */}
             <g transform={currentMood === "curious" ? "rotate(-12 100 80)" : currentMood === "confused" ? "rotate(12 100 80)" : currentMood === "shy" ? "rotate(8 100 80)" : ""}>
               <ellipse cx="100" cy="80" rx="62" ry="60" fill="url(#headGradient)" />
+              <ellipse cx="100" cy="132" rx="50" ry="18" fill="url(#aoShadow)" opacity="0.9" />
+              <ellipse cx="80" cy="60" rx="32" ry="22" fill="url(#topHighlight)" />
+              <ellipse cx="75" cy="55" rx="18" ry="12" fill="#FFFFFF" opacity="0.45" />
+              <ellipse cx="70" cy="50" rx="8" ry="6" fill="#FFFFFF" opacity="0.7" />
+              <ellipse cx="68" cy="48" rx="4" ry="3" fill="#FFFFFF" opacity="0.9" />
+              <ellipse cx="100" cy="80" rx="62" ry="60" fill="url(#headRimLight)" />
+              <ellipse cx="108" cy="128" rx="48" ry="10" fill="url(#aoShadow)" opacity="0.5" />
+              <ellipse cx="100" cy="128" rx="30" ry="8" fill="#DCE4EE" opacity="0.08" />
+              <path d="M 85 58 Q 92 52 98 56" stroke="#D4C8BE" strokeWidth="0.8" fill="none" opacity="0.08" />
+              <path d="M 72 68 Q 80 60 88 64" stroke="#D4C8BE" strokeWidth="0.8" fill="none" opacity="0.07" />
+              <path d="M 105 58 Q 112 52 118 57" stroke="#D4C8BE" strokeWidth="0.8" fill="none" opacity="0.07" />
+              <path d="M 88 100 Q 96 94 104 98" stroke="#D4C8BE" strokeWidth="0.8" fill="none" opacity="0.06" />
+              <path d="M 78 130 Q 88 124 98 128" stroke="#D4C8BE" strokeWidth="0.8" fill="none" opacity="0.07" />
+              <path d="M 102 130 Q 112 124 120 129" stroke="#D4C8BE" strokeWidth="0.8" fill="none" opacity="0.07" />
 
               {/* Ears - mood-based */}
               {currentMood === "curious" || currentMood === "learning" || actionState === "listening" ? (
                 <>
-                  <ellipse cx="58" cy="42" rx="21" ry="25" fill="url(#earGradient)" transform="rotate(-10 58 42)" />
-                  <ellipse cx="142" cy="42" rx="21" ry="25" fill="url(#earGradient)" transform="rotate(10 142 42)" />
-                  <ellipse cx="58" cy="51" rx="12" ry="13" fill="#5A6978" />
-                  <ellipse cx="142" cy="51" rx="12" ry="13" fill="#5A6978" />
+                  <ellipse cx="60" cy="48" rx="16" ry="20" fill="url(#aoShadow)" opacity="0.6" transform="rotate(-10 60 48)" />
+                  <ellipse cx="58" cy="42" rx="23" ry="27" fill="url(#earGradient)" transform="rotate(-10 58 42)" />
+                  <ellipse cx="51" cy="34" rx="9" ry="10" fill="#4A5068" opacity="0.6" transform="rotate(-10 51 34)" />
+                  <ellipse cx="59" cy="44" rx="11" ry="13" fill="url(#innerEarGradient)" transform="rotate(-10 59 44)" />
+
+                  <ellipse cx="140" cy="48" rx="16" ry="20" fill="url(#aoShadow)" opacity="0.6" transform="rotate(10 140 48)" />
+                  <ellipse cx="142" cy="42" rx="23" ry="27" fill="url(#earGradient)" transform="rotate(10 142 42)" />
+                  <ellipse cx="135" cy="34" rx="9" ry="10" fill="#4A5068" opacity="0.6" transform="rotate(10 135 34)" />
+                  <ellipse cx="141" cy="44" rx="11" ry="13" fill="url(#innerEarGradient)" transform="rotate(10 141 44)" />
                 </>
               ) : actionState === "ear_flick" ? (
                 <>
+                  <ellipse cx="60" cy="54" rx="16" ry="20" fill="url(#aoShadow)" opacity="0.6" />
                   <motion.ellipse 
                     cx="58" 
-                    cy="42" 
-                    rx="21" 
-                    ry="25" 
+                    cy="48" 
+                    rx="23" 
+                    ry="27" 
                     fill="url(#earGradient)"
-                    animate={{ ry: [25, 15, 25] }}
+                    animate={{ ry: [27, 17, 27] }}
                     transition={{ duration: 0.4 }}
                   />
-                  <ellipse cx="142" cy="48" rx="21" ry="24" fill="url(#earGradient)" />
-                  <ellipse cx="58" cy="51" rx="12" ry="13" fill="#5A6978" />
-                  <ellipse cx="142" cy="51" rx="12" ry="13" fill="#5A6978" />
+                  <ellipse cx="59" cy="50" rx="11" ry="13" fill="url(#innerEarGradient)" />
+
+                  <ellipse cx="140" cy="54" rx="16" ry="20" fill="url(#aoShadow)" opacity="0.6" />
+                  <ellipse cx="142" cy="48" rx="23" ry="27" fill="url(#earGradient)" />
+                  <ellipse cx="141" cy="50" rx="11" ry="13" fill="url(#innerEarGradient)" />
                 </>
               ) : (
                 <>
-                  <ellipse cx="58" cy="48" rx="21" ry="24" fill="url(#earGradient)" />
-                  <ellipse cx="142" cy="48" rx="21" ry="24" fill="url(#earGradient)" />
-                  <ellipse cx="58" cy="51" rx="12" ry="13" fill="#5A6978" />
-                  <ellipse cx="142" cy="51" rx="12" ry="13" fill="#5A6978" />
+                  <ellipse cx="60" cy="54" rx="16" ry="20" fill="url(#aoShadow)" opacity="0.6" />
+                  <ellipse cx="58" cy="48" rx="23" ry="27" fill="url(#earGradient)" />
+                  <ellipse cx="51" cy="40" rx="9" ry="10" fill="#4A5068" opacity="0.6" />
+                  <ellipse cx="59" cy="50" rx="11" ry="13" fill="url(#innerEarGradient)" />
+                  <ellipse cx="56" cy="45" rx="4" ry="4" fill="#5A6178" opacity="0.35" />
+                  <ellipse cx="66" cy="55" rx="6" ry="10" fill="#C8E8FF" opacity="0.25" />
+
+                  <ellipse cx="140" cy="54" rx="16" ry="20" fill="url(#aoShadow)" opacity="0.6" />
+                  <ellipse cx="142" cy="48" rx="23" ry="27" fill="url(#earGradient)" />
+                  <ellipse cx="135" cy="40" rx="9" ry="10" fill="#4A5068" opacity="0.6" />
+                  <ellipse cx="141" cy="50" rx="11" ry="13" fill="url(#innerEarGradient)" />
+                  <ellipse cx="138" cy="45" rx="4" ry="4" fill="#5A6178" opacity="0.35" />
+                  <ellipse cx="134" cy="55" rx="6" ry="10" fill="#C8E8FF" opacity="0.25" />
                 </>
               )}
 
               {/* Eye patches */}
-              <ellipse cx="75" cy="83" rx="20" ry="24" fill="url(#eyePatchGradient)" />
-              <ellipse cx="125" cy="83" rx="20" ry="24" fill="url(#eyePatchGradient)" />
+              <ellipse cx="75" cy="83" rx="23" ry="27" fill="url(#aoShadow)" opacity="0.4" />
+              <ellipse cx="75" cy="83" rx="22" ry="26" fill="url(#eyePatchGradient)" />
+              <ellipse cx="67" cy="74" rx="8" ry="9" fill="#43495E" opacity="0.38" />
+              <ellipse cx="82" cy="92" rx="7" ry="10" fill="#253248" opacity="0.22" />
+
+              <ellipse cx="125" cy="83" rx="23" ry="27" fill="url(#aoShadow)" opacity="0.4" />
+              <ellipse cx="125" cy="83" rx="22" ry="26" fill="url(#eyePatchGradient)" />
+              <ellipse cx="117" cy="74" rx="8" ry="9" fill="#43495E" opacity="0.38" />
+              <ellipse cx="132" cy="92" rx="7" ry="10" fill="#253248" opacity="0.22" />
 
               {/* EYES - Mood-based expressions */}
               {actionState === "blinking" ? (
@@ -1173,53 +1505,63 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
                   <circle 
                     cx={leftEyeCenter.x + leftPupilOffset.x} 
                     cy={leftEyeCenter.y + leftPupilOffset.y} 
-                    r="10" 
+                    r="11" 
                     fill="#1A202C" 
                   />
                   <circle 
                     cx={rightEyeCenter.x + rightPupilOffset.x} 
                     cy={rightEyeCenter.y + rightPupilOffset.y} 
-                    r="10" 
+                    r="11" 
                     fill="#1A202C" 
                   />
                   <ellipse cx="71" cy="81" rx="5" ry="6" fill="url(#eyeShine)" />
                   <ellipse cx="121" cy="81" rx="5" ry="6" fill="url(#eyeShine)" />
+                  <ellipse cx="80" cy="90" rx="3" ry="3" fill="url(#eyeShine2)" />
+                  <ellipse cx="130" cy="90" rx="3" ry="3" fill="url(#eyeShine2)" />
+                  <circle cx="69" cy="77" r="2" fill="#FFFFFF" />
+                  <circle cx="119" cy="77" r="2" fill="#FFFFFF" />
                 </>
               )}
 
               {/* Cheeks */}
               <ellipse 
-                cx="48" 
+                cx="47" 
                 cy="96" 
                 rx={currentMood === "shy" || currentMood === "excited" ? "16" : "14"} 
-                ry="11" 
+                ry="12" 
                 fill="url(#cheekBlush)" 
-                opacity={currentMood === "shy" || currentMood === "excited" ? "1" : "0.8"}
+                opacity={currentMood === "shy" || currentMood === "excited" ? "0.22" : "0.16"}
               />
+              <ellipse cx="47" cy="96" rx="10" ry="7" fill="#D3D9E2" opacity="0.06" />
               <ellipse 
-                cx="152" 
+                cx="153" 
                 cy="96" 
                 rx={currentMood === "shy" || currentMood === "excited" ? "16" : "14"} 
-                ry="11" 
+                ry="12" 
                 fill="url(#cheekBlush)"
-                opacity={currentMood === "shy" || currentMood === "excited" ? "1" : "0.8"}
+                opacity={currentMood === "shy" || currentMood === "excited" ? "0.22" : "0.16"}
               />
+              <ellipse cx="153" cy="96" rx="10" ry="7" fill="#D3D9E2" opacity="0.06" />
 
               {/* Nose */}
               {actionState === "nose_honk" ? (
                 <motion.ellipse 
                   cx="100" 
                   cy="102" 
-                  rx="8" 
-                  ry="6" 
+                  rx="9" 
+                  ry="7" 
                   fill="url(#noseGradient)"
+                  filter="url(#softGlow)"
                   animate={{ scaleX: [1, 0.7, 1], scaleY: [1, 0.7, 1] }}
                   transition={{ duration: 0.6 }}
                 />
               ) : (
-                <ellipse cx="100" cy="102" rx="8" ry="6" fill="url(#noseGradient)" />
+                <ellipse cx="100" cy="102" rx="9" ry="7" fill="url(#noseGradient)" filter="url(#softGlow)" />
               )}
-              <ellipse cx="97" cy="100" rx="3" ry="2.5" fill="#FFFFFF" opacity="0.7" />
+              <ellipse cx="96" cy="99" rx="4" ry="2.5" fill="#9AA5B4" opacity="0.65" />
+              <ellipse cx="95" cy="98" rx="2" ry="1.5" fill="#C7D2DF" opacity="0.75" />
+              <circle cx="94" cy="98" r="1.2" fill="#FFFFFF" opacity="0.9" />
+              <ellipse cx="100" cy="118" rx="18" ry="4" fill="url(#aoShadow)" opacity="0.3" />
 
               {/* MOUTH - Mood-based expressions */}
               {actionState === "yawning" ? (
