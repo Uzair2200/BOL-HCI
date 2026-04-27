@@ -71,7 +71,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
   }, [interactionState]);
 
   // Handle tap/click
-  const handleTap = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+  const handleTap = (event: MouseEvent | TouchEvent | PointerEvent) => {
     if (!containerRef.current) return;
     
     const now = Date.now();
@@ -81,7 +81,7 @@ export function PetDisplay({ mood = "happy", size = "lg", showBubbles = false, i
     const rect = containerRef.current.getBoundingClientRect();
     let clientX, clientY;
     
-    if ('touches' in event) {
+    if ("touches" in event) {
       const touch = event.touches[0] || event.changedTouches[0];
       if (!touch) return;
       clientX = touch.clientX;
