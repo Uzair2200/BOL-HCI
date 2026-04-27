@@ -13,11 +13,11 @@ interface FriendEntry {
 }
 
 const friends: FriendEntry[] = [
-  { petName: "Max", ownerName: "Sam", level: 10, avatar: "🐶" },
-  { petName: "Buddy", ownerName: "Alex", level: 8, avatar: "🐼" },
-  { petName: "Charlie", ownerName: "Leo", level: 7, avatar: "🐱" },
-  { petName: "Luna", ownerName: "Maya", level: 6, avatar: "🦊" },
-  { petName: "Coco", ownerName: "Zara", level: 5, avatar: "🐰" },
+  { petName: "Rayyan", ownerName: "Ahmed", level: 10, avatar: "🐶" },
+  { petName: "Fatima", ownerName: "Asad", level: 8, avatar: "🐼" },
+  { petName: "Amna", ownerName: "Ali", level: 7, avatar: "🐱" },
+  { petName: "Safa", ownerName: "Suleman", level: 6, avatar: "🦊" },
+  { petName: "Ayesha", ownerName: "Hamza", level: 5, avatar: "🐰" },
 ];
 
 function getTier(level: number): Tier {

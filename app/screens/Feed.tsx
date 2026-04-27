@@ -13,6 +13,7 @@ export default function Feed() {
   const { isRecording, setIsRecording } = useMic();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<boolean[]>([]);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showReward, setShowReward] = useState(false);
 
   const questions = [
@@ -40,16 +41,18 @@ export default function Feed() {
 
   const handleMicToggle = () => {
     if (!isRecording) {
+      if (!selectedOption) return;
       setIsRecording(true);
     } else {
       setIsRecording(false);
-      const isCorrect = Math.random() > 0.3;
+      const isCorrect = selectedOption === currentQ.correct;
       const newAnswers = [...answers, isCorrect];
       setAnswers(newAnswers);
       setTimeout(() => {
         if (currentQuestion < questions.length - 1) {
           setCurrentQuestion(currentQuestion + 1);
           setAnswers([]);
+          setSelectedOption(null);
         } else {
           setShowReward(true);
         }
@@ -153,9 +156,19 @@ export default function Feed() {
             <div className="mt-4 space-y-2">
               <p className="text-xs font-medium text-muted-foreground mb-2">Choose one and say it:</p>
               {currentQ.options.map((option, idx) => (
-                <div key={idx} className="bg-white rounded-xl px-4 py-3 text-center font-medium">
+                <button
+                  type="button"
+                  key={idx}
+                  onClick={() => setSelectedOption(option)}
+                  disabled={answers.length > 0}
+                  className={`w-full rounded-xl px-4 py-3 text-center font-medium transition-all ${
+                    selectedOption === option
+                      ? "bg-emerald-100 ring-2 ring-emerald-400"
+                      : "bg-white hover:bg-emerald-50"
+                  } ${answers.length > 0 ? "cursor-not-allowed opacity-80" : "cursor-pointer"}`}
+                >
                   {option}
-                </div>
+                </button>
               ))}
             </div>
           </PromptCard>
@@ -198,11 +211,11 @@ export default function Feed() {
             <MicButton
               isRecording={isRecording}
               onToggle={handleMicToggle}
-              disabled={answers.length > 0 && !isRecording}
+              disabled={(answers.length > 0 && !isRecording) || (!isRecording && !selectedOption)}
               size="lg"
             />
             <p className="text-sm text-muted-foreground mt-3">
-              {isRecording ? "Tap to stop" : "Tap to speak"}
+              {isRecording ? "Tap to stop" : selectedOption ? "Tap to speak" : "Select an option first"}
             </p>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { SproutIcon, DropletIcon } from "../components/AppIcons";
 import { TopBar } from "../components/TopBar";
 import { BottomNav } from "../components/BottomNav";
 import { MicButton } from "../components/MicButton";
+import { RewardCard } from "../components/RewardCard";
 import { useState } from "react";
 import { useMic } from "../context/MicContext";
 
@@ -14,6 +15,8 @@ interface Plant {
 
 export default function PetGarden() {
   const { isRecording, setIsRecording } = useMic();
+  const [showReward, setShowReward] = useState(false);
+  const [wateredWord, setWateredWord] = useState("");
   const [selectedPlant, setSelectedPlant] = useState<number | null>(null);
   const [plants, setPlants] = useState<Plant[]>([
     { word: "happy", growth: 80, emoji: "🌻" },
@@ -26,13 +29,36 @@ export default function PetGarden() {
     if (!isRecording && selectedPlant !== null) {
       setIsRecording(true);
     } else if (isRecording) {
-      setIsRecording(false);
-      setPlants(prev => prev.map((p, i) =>
-        i === selectedPlant ? { ...p, growth: Math.min(100, p.growth + 20) } : p
-      ));
-      setSelectedPlant(null);
+      const plantIndex = selectedPlant;
+      if (plantIndex === null) return;
+
+      setTimeout(() => {
+        setIsRecording(false);
+        setPlants(prev => prev.map((p, i) =>
+          i === plantIndex ? { ...p, growth: Math.min(100, p.growth + 20) } : p
+        ));
+        setWateredWord(plants[plantIndex].word);
+        setSelectedPlant(null);
+        setTimeout(() => setShowReward(true), 500);
+      }, 3000);
     }
   };
+
+  if (showReward) {
+    return (
+      <div className="min-h-screen bg-[#FFF8F0] flex flex-col">
+        <TopBar showBack />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <RewardCard
+            xp={15}
+            diamonds={5}
+            message={`"${wateredWord}" is growing! Keep using it in sentences.`}
+            onContinue={() => setShowReward(false)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-lime-50 to-[#FFF8F0] flex flex-col">

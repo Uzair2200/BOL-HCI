@@ -3,14 +3,14 @@ import { TopBar } from "../components/TopBar";
 import { BottomNav } from "../components/BottomNav";
 
 const users = [
-  "sam_speaks",
-  "alex_english",
-  "leo_reads",
-  "maya_words",
-  "zara_talks",
-  "bolbuddy01",
-  "grammarfox",
-  "sunnypanda",
+  "amna_ali",
+  "asad_ahmed",
+  "fatima_speaks",
+  "rayyan_reads",
+  "suleman_talks",
+  "safa_words",
+  "ayesha_learns",
+  "hamza_english",
 ];
 
 export default function AddFriends() {

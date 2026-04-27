@@ -3,6 +3,7 @@ import { BottomNav } from "../components/BottomNav";
 import { PetDisplay } from "../components/PetDisplay";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
+import { useRef } from "react";
 import { 
   SunIcon, UtensilsIcon, BathIcon, MoonIcon, PlayIcon, 
   MapPinIcon, StethoscopeIcon, SparklesIcon, BookOpenIcon, 
@@ -22,6 +23,16 @@ interface ActivityCard {
 
 export default function Home() {
   const navigate = useNavigate();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const dailyCareRef = useRef<HTMLDivElement>(null);
+
+  const handleScrollIndicatorClick = () => {
+    if (dailyCareRef.current) {
+      dailyCareRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    scrollContainerRef.current?.scrollBy({ top: 360, behavior: "smooth" });
+  };
 
   const activities: ActivityCard[] = [
     { 
@@ -144,7 +155,7 @@ export default function Home() {
         }
       `}</style>
       
-      <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pb-24 custom-scrollbar">
         {/* Pet Display Area */}
         <div className="relative px-6 py-8 bg-gradient-to-b from-purple-100/40 to-transparent">
           <div className="text-center mb-4">
@@ -191,8 +202,13 @@ export default function Home() {
           </div>
           
           {/* Scroll indicator */}
-          <motion.div 
-            className="flex justify-center mt-8"
+          <motion.button
+            type="button"
+            onClick={handleScrollIndicatorClick}
+            onTap={handleScrollIndicatorClick}
+            whileTap={{ scale: 0.98 }}
+            aria-label="Scroll down to Daily Care activities"
+            className="mt-8 block mx-auto cursor-pointer"
             animate={{ y: [0, 12, 0] }}
             transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
           >
@@ -214,11 +230,11 @@ export default function Home() {
                 <p className="text-xs text-white/90 font-medium">More activities below</p>
               </div>
             </div>
-          </motion.div>
+          </motion.button>
         </div>
 
         {/* Daily Activities */}
-        <div className="px-6 py-6">
+        <div ref={dailyCareRef} className="px-6 py-6">
           <h2 className="text-[20px] font-bold mb-4">Daily Care</h2>
           <div className="grid grid-cols-3 gap-3">
             {activities.map((activity) => {
